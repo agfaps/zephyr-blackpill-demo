@@ -1,0 +1,33 @@
+/{
+    aliases {
+        led1 = &external_led0;
+        led2 = &external_led1;
+        led3 = &external_led2;
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        external_led0: led_1 {
+            gpios = <&gpioa 1 GPIO_ACTIVE_HIGH>;
+			label = "External Red LED";
+        };
+        external_led1: led_2 {
+            gpios = <&gpioa 2 GPIO_ACTIVE_HIGH>;
+			label = "External Yellow LED";
+        };
+        external_led2: led_3 {
+            gpios = <&gpioa 3 GPIO_ACTIVE_HIGH>;
+			label = "External Green LED";
+        };
+    };
+};
+
+&i2c1 {
+    status = "okay";
+
+    bme280: bme280@76 {
+        compatible = "bosch,bme280";
+        reg = <0x76>;
+        label = "BME280";
+    };
+};
