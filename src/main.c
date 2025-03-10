@@ -8,6 +8,10 @@
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/sys/printk.h>
 
+#include <zephyr/drivers/display.h>
+#include <zephyr/display/cfb.h>
+#include <string.h>
+
 /* 1000 msec = 1 sec, 500 = 0.5 sec */
 #define SLEEP_TIME_MS   1000
 
@@ -36,6 +40,10 @@ static struct gpio_callback button_cb_data;
 
 static const struct device *sensor_dev = DEVICE_DT_GET(DT_NODELABEL(bme280));
 
+#define I2C_OLED_DISPLAY    DT_NODELABEL(ssd1306)
+
+static const struct device *oled_display_dev = DEVICE_DT_GET(I2C_OLED_DISPLAY);
+
 void button_pressed(
     const struct device *dev,
     struct gpio_callback *cb,
@@ -52,6 +60,7 @@ int main(void)
     uint32_t counter = 0;
     bool onboard_led_state = true;
     struct sensor_value temp, pressure, humidity;
+    char display_buf[32] = {0};
 
     printf("Blackpill firmware is running!\n");
 
@@ -82,6 +91,18 @@ int main(void)
     if (!device_is_ready(sensor_dev))
     {
         printf("BME280 device is not ready\n");
+        return 0;
+    }
+
+    if (!device_is_ready(oled_display_dev))
+    {
+        printf("SSD1306 device is not ready\n");
+        return 0;
+    }
+
+    if (cfb_framebuffer_init(oled_display_dev) < 0)
+    {
+        printf("Framebuffer initialization failed\n");
         return 0;
     }
 
@@ -140,6 +161,13 @@ int main(void)
     printf("Set up button at %s pin %d\n", onboard_button.port->name, onboard_button.pin);
 
     printf("BME280 device is ready\n");
+
+    // Clear the display
+    display_blanking_off(oled_display_dev);
+    cfb_framebuffer_clear(oled_display_dev, true);
+
+    // set font (8x16 is included by default)
+    cfb_framebuffer_set_font(oled_display_dev, 0);
 
     while (true)
     {
@@ -200,6 +228,20 @@ int main(void)
         // printf("Temperature: %d.%06d °C\n", temp.val1, temp.val1);
         printf("Pressure: %.2f kPa\n", sensor_value_to_double(&pressure) / 1000);
         printf("Humidity: %.2f %%\n", sensor_value_to_double(&humidity));
+
+        snprintf(display_buf, sizeof(display_buf), "T: %.2f C", sensor_value_to_double(&temp));
+        // display_print(oled_display_dev, 0, 0, display_buf);
+        cfb_print(oled_display_dev, display_buf, 10, 10);
+
+        snprintf(display_buf, sizeof(display_buf), "P: %.2f kPa", sensor_value_to_double(&pressure) / 1000);
+        // display_print(oled_display_dev, 0, 16, display_buf);
+        cfb_print(oled_display_dev, display_buf, 10, 30);
+
+        snprintf(display_buf, sizeof(display_buf), "H: %.2f %%", sensor_value_to_double(&humidity));
+        // display_print(oled_display_dev, 0, 32, display_buf);
+        cfb_print(oled_display_dev, display_buf, 10, 50);
+
+        cfb_framebuffer_finalize(oled_display_dev);
 
         k_sleep(K_MSEC(SLEEP_TIME_MS));
     }
