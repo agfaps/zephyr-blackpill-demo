@@ -55,6 +55,9 @@ void button_pressed(
 
 int main(void)
 {
+    // sleep 3 seconds to give time for catching the printed message
+    k_sleep(K_SECONDS(3));
+    printf("\n\n\n");
     int ret_value = 0;
     int ret = 0;
     uint32_t counter = 0;
@@ -224,7 +227,7 @@ int main(void)
         sensor_channel_get(sensor_dev, SENSOR_CHAN_PRESS, &pressure);
         sensor_channel_get(sensor_dev, SENSOR_CHAN_HUMIDITY, &humidity);
 
-        printf("Temperature: %.2f C\n", sensor_value_to_double(&temp));
+        printf("Temperature: %.2f °C\n", sensor_value_to_double(&temp));
         // printf("Temperature: %d.%06d °C\n", temp.val1, temp.val1);
         printf("Pressure: %.2f kPa\n", sensor_value_to_double(&pressure) / 1000);
         printf("Humidity: %.2f %%\n", sensor_value_to_double(&humidity));
